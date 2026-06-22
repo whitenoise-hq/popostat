@@ -22,8 +22,8 @@ import { fonts } from '../theme/fonts'
 const SCAN_MESSAGES = [
   '전투력 분석 중...',
   '스탯 판독 중...',
-  '특수 능력 감지 중...',
   '등급 산정 중...',
+  '특수 능력 감지 중...',
 ]
 
 const STAT_LABELS = ['공격', '방어', '민첩', '귀여움', '게으름']
@@ -56,6 +56,7 @@ function useRotatingMessage() {
 
 export default function ScanScreen() {
   const router = useRouter()
+  const { imageUri } = getMeasureState()
   const scanLineY = useSharedValue(0)
   const glowOpacity = useSharedValue(0.4)
   const progressWidth = useSharedValue(0)
@@ -123,8 +124,8 @@ export default function ScanScreen() {
 
     glowOpacity.value = withRepeat(
       withSequence(
-        withTiming(0.8, { duration: 800 }),
-        withTiming(0.3, { duration: 800 }),
+        withTiming(0.8, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.3, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
     )
@@ -157,13 +158,17 @@ export default function ScanScreen() {
       <View style={styles.content}>
         <Animated.View style={[styles.scanFrame, glowStyle]}>
           <View style={styles.imageArea}>
-            <View style={styles.imagePlaceholder}>
-              <Ionicons name="flash" size={64} color={colors.accent} />
-            </View>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.petImage} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="flash" size={64} color={colors.accent} />
+              </View>
+            )}
 
             <Animated.View style={[styles.scanLine, scanLineStyle]}>
               <LinearGradient
-                colors={['transparent', `${colors.accent}66`, `${colors.accent}cc`, `${colors.accent}66`, 'transparent']}
+                colors={['transparent', `${colors.accent}88`, `${colors.accent}ee`, `${colors.accent}88`, 'transparent']}
                 style={styles.scanLineGradient}
               />
             </Animated.View>
@@ -250,6 +255,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  petImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.5,
+  },
   imagePlaceholder: {
     opacity: 0.3,
   },
@@ -257,7 +267,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    height: 4,
+    height: 12,
   },
   scanLineGradient: {
     flex: 1,
