@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "PopoStat",
+    "slug": "popostat",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "popostat",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.popostat.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "반려동물 사진을 선택하여 전투력을 측정합니다.",
+        "NSPhotoLibraryAddUsageDescription": "전투력 카드를 앨범에 저장합니다.",
+        "NSCameraUsageDescription": "반려동물 사진을 촬영하여 전투력을 측정합니다."
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-image-picker",
+      "expo-web-browser",
+      "expo-splash-screen",
+      "@react-native-community/datetimepicker",
+      "expo-sharing"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
