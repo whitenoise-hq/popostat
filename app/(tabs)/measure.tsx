@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, Pressable, Image, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Image, TextInput, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
@@ -45,16 +45,19 @@ export default function MeasureScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <View style={styles.flex}>
         <View style={styles.header}>
           <Text style={styles.title}>전투력 측정</Text>
           <Text style={styles.subtitle}>우리 아이의 전투력은?</Text>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentInner}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
           {imageUri ? (
             <View style={styles.photoPreview}>
               <Image source={{ uri: imageUri }} style={styles.previewImage} />
@@ -97,7 +100,7 @@ export default function MeasureScreen() {
               />
             </View>
           </View>
-        </View>
+        </ScrollView>
 
         <View style={styles.footer}>
           <Pressable
@@ -115,7 +118,7 @@ export default function MeasureScreen() {
             </Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   )
 }
@@ -146,8 +149,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentInner: {
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 20,
     gap: 20,
   },
   photoArea: {
@@ -210,6 +216,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     gap: 8,
+    marginTop: 10,
   },
   inputLabel: {
     fontSize: 13,

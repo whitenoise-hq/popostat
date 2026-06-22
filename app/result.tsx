@@ -58,9 +58,7 @@ export default function ResultScreen() {
             <Text style={styles.analysisText}>{result.analysis}</Text>
           </View>
         ) : null}
-      </ScrollView>
 
-      <View style={styles.footer}>
         <View style={styles.buttonRow}>
           <Pressable style={styles.primaryButton} onPress={handleGoToDeck}>
             <Ionicons name="albums" size={18} color={colors.button.primaryText} />
@@ -75,7 +73,7 @@ export default function ResultScreen() {
           <Ionicons name="refresh" size={16} color={colors.text.muted} />
           <Text style={styles.retryButtonText}>다시 측정하기</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -90,7 +88,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 8,
+    paddingBottom: 40,
     gap: 16,
   },
   analysisCard: {
@@ -109,11 +107,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     color: colors.text.secondary,
     lineHeight: 20,
-  },
-  footer: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    gap: 10,
   },
   buttonRow: {
     flexDirection: 'row',

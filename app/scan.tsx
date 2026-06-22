@@ -158,7 +158,7 @@ export default function ScanScreen() {
         <Animated.View style={[styles.scanFrame, glowStyle]}>
           <View style={styles.imageArea}>
             <View style={styles.imagePlaceholder}>
-              <Ionicons name="paw" size={64} color={colors.accent} />
+              <Ionicons name="flash" size={64} color={colors.accent} />
             </View>
 
             <Animated.View style={[styles.scanLine, scanLineStyle]}>

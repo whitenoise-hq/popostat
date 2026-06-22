@@ -10,39 +10,39 @@ import type { Card, Grade } from '../../types/card'
 
 const MOCK_CARDS: Card[] = [
   {
-    id: '1', userId: 'u1', createdAt: '2026-06-22T00:00:00Z',
-    petName: '뽀삐', imageUrl: '', detected: '강아지', nameGuess: '포메라니안',
-    power: 6842, grade: 'A', title: '솜뭉치 폭격기', analysis: '', specialMove: '솜사탕 돌진',
+    id: '1', user_id: 'u1', created_at: '2026-06-22T00:00:00Z',
+    pet_name: '뽀삐', image_url: '', detected: '강아지', name_guess: '포메라니안',
+    power: 6842, grade: 'A', title: '솜뭉치 폭격기', analysis: '', special_move: '솜사탕 돌진',
     stats: { attack: 72, defense: 45, agility: 68, cuteness: 92, laziness: 35 },
   },
   {
-    id: '2', userId: 'u1', createdAt: '2026-06-21T00:00:00Z',
-    petName: '루나', imageUrl: '', detected: '고양이', nameGuess: '러시안 블루',
-    power: 9200, grade: 'SS', title: '달빛의 암살자', analysis: '', specialMove: '그림자 습격',
+    id: '2', user_id: 'u1', created_at: '2026-06-21T00:00:00Z',
+    pet_name: '루나', image_url: '', detected: '고양이', name_guess: '러시안 블루',
+    power: 9200, grade: 'SS', title: '달빛의 암살자', analysis: '', special_move: '그림자 습격',
     stats: { attack: 88, defense: 75, agility: 95, cuteness: 82, laziness: 15 },
   },
   {
-    id: '3', userId: 'u1', createdAt: '2026-06-20T00:00:00Z',
-    petName: '콩이', imageUrl: '', detected: '강아지', nameGuess: '시츄',
-    power: 3200, grade: 'D', title: '낮잠의 왕', analysis: '', specialMove: '무한 졸음',
+    id: '3', user_id: 'u1', created_at: '2026-06-20T00:00:00Z',
+    pet_name: '콩이', image_url: '', detected: '강아지', name_guess: '시츄',
+    power: 3200, grade: 'D', title: '낮잠의 왕', analysis: '', special_move: '무한 졸음',
     stats: { attack: 25, defense: 40, agility: 20, cuteness: 78, laziness: 85 },
   },
   {
-    id: '4', userId: 'u1', createdAt: '2026-06-19T00:00:00Z',
-    petName: '제우스', imageUrl: '', detected: '강아지', nameGuess: '시베리안 허스키',
-    power: 9800, grade: 'SSS', title: '폭풍의 지배자', analysis: '', specialMove: '번개 울부짖음',
+    id: '4', user_id: 'u1', created_at: '2026-06-19T00:00:00Z',
+    pet_name: '제우스', image_url: '', detected: '강아지', name_guess: '시베리안 허스키',
+    power: 9800, grade: 'SSS', title: '폭풍의 지배자', analysis: '', special_move: '번개 울부짖음',
     stats: { attack: 96, defense: 88, agility: 92, cuteness: 85, laziness: 8 },
   },
   {
-    id: '5', userId: 'u1', createdAt: '2026-06-18T00:00:00Z',
-    petName: '모찌', imageUrl: '', detected: '고양이', nameGuess: '스코티시 폴드',
-    power: 5100, grade: 'B', title: '동글동글 수비수', analysis: '', specialMove: '떡뭉치 방어',
+    id: '5', user_id: 'u1', created_at: '2026-06-18T00:00:00Z',
+    pet_name: '모찌', image_url: '', detected: '고양이', name_guess: '스코티시 폴드',
+    power: 5100, grade: 'F', title: '동글동글 수비수', analysis: '', special_move: '떡뭉치 방어',
     stats: { attack: 35, defense: 72, agility: 40, cuteness: 95, laziness: 60 },
   },
   {
-    id: '6', userId: 'u1', createdAt: '2026-06-17T00:00:00Z',
-    petName: '번개', imageUrl: '', detected: '강아지', nameGuess: '보더콜리',
-    power: 8100, grade: 'S', title: '질풍의 목양견', analysis: '', specialMove: '섬광 질주',
+    id: '6', user_id: 'u1', created_at: '2026-06-17T00:00:00Z',
+    pet_name: '번개', image_url: '', detected: '강아지', name_guess: '보더콜리',
+    power: 8100, grade: 'S', title: '질풍의 목양견', analysis: '', special_move: '섬광 질주',
     stats: { attack: 70, defense: 65, agility: 98, cuteness: 60, laziness: 10 },
   },
 ]
@@ -57,7 +57,7 @@ function MiniCard({ card, onPress }: { card: Card; onPress: () => void }) {
       </View>
       <View style={styles.miniInfo}>
         <View style={styles.miniTopRow}>
-          <Text style={styles.miniName} numberOfLines={1}>{card.petName}</Text>
+          <Text style={styles.miniName} numberOfLines={1}>{card.pet_name}</Text>
           <View style={[styles.miniGradeBadge, { backgroundColor: grade.primary }]}>
             <Text style={styles.miniGradeText}>{card.grade}</Text>
           </View>

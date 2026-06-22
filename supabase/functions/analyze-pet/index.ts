@@ -1,8 +1,19 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"
-import { createClient } from "jsr:@supabase/supabase-js@2"
-import { calcPower, calcGrade } from "../_shared/score.ts"
+function calcPower(s: { attack: number; defense: number; agility: number; cuteness: number; laziness: number }): number {
+  const raw = s.attack * 0.30 + s.defense * 0.25 + s.agility * 0.25 + s.cuteness * 0.10 - s.laziness * 0.20
+  const norm = Math.max(0, Math.min(1, (raw + 20) / 110))
+  return Math.round(Math.pow(norm, 1.6) * 10000)
+}
 
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!
+function calcGrade(power: number): string {
+  if (power <= 1500) return "F"
+  if (power <= 3000) return "D"
+  if (power <= 4500) return "C"
+  if (power <= 6000) return "B"
+  if (power <= 7500) return "A"
+  if (power <= 8500) return "S"
+  if (power <= 9500) return "SS"
+  return "SSS"
+}
 
 const SYSTEM_PROMPT = `당신은 반려동물 전투력 측정기입니다. 사진을 분석해 게임 스탯을 매기세요.
 
@@ -22,62 +33,65 @@ const SYSTEM_PROMPT = `당신은 반려동물 전투력 측정기입니다. 사�
   "title": "재밌는 칭호",
   "stats": { "attack": 0, "defense": 0, "agility": 0, "cuteness": 0, "laziness": 0 },
   "analysis": "사진 근거를 든 2~3문장 해설",
-  "special_move": "필살기 이름 + 한줄 설명",
+  "special_move": "[스킬이름] 스킬 설명",
   "error": null
 }
 
 - power와 grade는 0과 "F"로 두세요. 서버에서 계산합니다.
 - 동물이 없으면 detected: "없음", error에 사유, 나머지 0/null`
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  })
+
 Deno.serve(async (req) => {
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+
   try {
-    // 인증 확인
+    // 인증
     const authHeader = req.headers.get("Authorization")
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "인증이 필요합니다" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      })
-    }
+    if (!authHeader) return json({ error: "인증이 필요합니다" }, 401)
 
-    // Supabase 클라이언트 (호출자 토큰 사용)
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    )
+    // 유저 확인 (REST API)
+    console.log("[analyze-pet] verifying user...")
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: authHeader, apikey: Deno.env.get("SUPABASE_ANON_KEY")! },
+    })
+    if (!userRes.ok) return json({ error: "유효하지 않은 사용자" }, 401)
+    const user = await userRes.json()
+    console.log("[analyze-pet] user:", user.id)
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "유효하지 않은 사용자" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      })
-    }
-
+    // 요청 파싱
     const { image_url, pet_name } = await req.json()
+    if (!image_url || !pet_name) return json({ error: "image_url과 pet_name이 필요합니다" }, 400)
+    console.log("[analyze-pet] image:", image_url, "name:", pet_name)
 
-    if (!image_url || !pet_name) {
-      return new Response(JSON.stringify({ error: "image_url과 pet_name이 필요합니다" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      })
-    }
+    // Signed URL (REST API with service role)
+    console.log("[analyze-pet] creating signed URL...")
+    const signRes = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/sign/card-images/${image_url}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          apikey: SUPABASE_SERVICE_ROLE_KEY!,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ expiresIn: 300 }),
+      }
+    )
+    const signData = await signRes.json()
+    console.log("[analyze-pet] sign result:", JSON.stringify(signData))
 
-    // Storage에서 signed URL 생성 (OpenAI에 전달용)
-    const imagePath = image_url.replace(/^.*card-images\//, "")
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from("card-images")
-      .createSignedUrl(imagePath, 300)
+    if (!signData.signedURL) return json({ error: "이미지 URL 생성 실패" }, 500)
+    const imageAccessUrl = `${SUPABASE_URL}/storage/v1${signData.signedURL}`
 
-    if (signedError || !signedData?.signedUrl) {
-      return new Response(JSON.stringify({ error: "이미지 URL 생성 실패" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      })
-    }
-
-    // OpenAI 비전 호출
+    // OpenAI 호출
+    console.log("[analyze-pet] calling OpenAI...")
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -94,7 +108,7 @@ Deno.serve(async (req) => {
             role: "user",
             content: [
               { type: "text", text: `이 반려동물의 이름은 "${pet_name}"입니다. 전투력을 측정해주세요.` },
-              { type: "image_url", image_url: { url: signedData.signedUrl } },
+              { type: "image_url", image_url: { url: imageAccessUrl } },
             ],
           },
         ],
@@ -102,46 +116,38 @@ Deno.serve(async (req) => {
       }),
     })
 
+    console.log("[analyze-pet] OpenAI status:", openaiRes.status)
     if (!openaiRes.ok) {
-      const err = await openaiRes.text()
-      console.error("OpenAI error:", err)
-      return new Response(JSON.stringify({ error: "AI 분석에 실패했습니다" }), {
-        status: 502,
-        headers: { "Content-Type": "application/json" },
-      })
+      const errText = await openaiRes.text()
+      console.error("[analyze-pet] OpenAI error:", errText)
+      return json({ error: "AI 분석에 실패했습니다" }, 502)
     }
 
     const openaiData = await openaiRes.json()
     const content = openaiData.choices?.[0]?.message?.content
-
-    if (!content) {
-      return new Response(JSON.stringify({ error: "AI 응답이 비어있습니다" }), {
-        status: 502,
-        headers: { "Content-Type": "application/json" },
-      })
-    }
+    if (!content) return json({ error: "AI 응답이 비어있습니다" }, 502)
 
     const parsed = JSON.parse(content)
+    console.log("[analyze-pet] detected:", parsed.detected)
 
-    // 동물 미검출
     if (parsed.detected === "없음") {
-      return new Response(JSON.stringify({
-        error: parsed.error || "동물을 찾을 수 없습니다",
-        detected: "없음",
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })
+      return json({ error: parsed.error || "동물을 찾을 수 없습니다", detected: "없음" })
     }
 
-    // power/grade는 코드로 계산 (AI 값 무시)
     const power = calcPower(parsed.stats)
     const grade = calcGrade(power)
+    console.log("[analyze-pet] power:", power, "grade:", grade)
 
-    // DB 저장 (service role 대신 호출자 토큰 사용 → RLS 적용)
-    const { data: card, error: insertError } = await supabase
-      .from("cards")
-      .insert({
+    // DB insert (REST API with service role, user_id를 직접 지정)
+    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/cards`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        apikey: SUPABASE_SERVICE_ROLE_KEY!,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
         user_id: user.id,
         pet_name,
         image_url,
@@ -153,27 +159,23 @@ Deno.serve(async (req) => {
         analysis: parsed.analysis,
         special_move: parsed.special_move,
         stats: parsed.stats,
-      })
-      .select()
-      .single()
+      }),
+    })
 
-    if (insertError) {
-      console.error("Insert error:", insertError)
-      return new Response(JSON.stringify({ error: "카드 저장에 실패했습니다" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      })
+    if (!insertRes.ok) {
+      const insertErr = await insertRes.text()
+      console.error("[analyze-pet] insert error:", insertErr)
+      return json({ error: `카드 저장 실패: ${insertErr}` }, 500)
     }
 
-    return new Response(JSON.stringify(card), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    })
+    const cards = await insertRes.json()
+    const card = Array.isArray(cards) ? cards[0] : cards
+    console.log("[analyze-pet] saved card:", card.id)
+
+    return json(card)
   } catch (err) {
-    console.error("Unexpected error:", err)
-    return new Response(JSON.stringify({ error: "서버 오류가 발생했습니다" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    })
+    const msg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err)
+    console.error("[analyze-pet] error:", msg)
+    return json({ error: msg, step: "catch" }, 500)
   }
 })

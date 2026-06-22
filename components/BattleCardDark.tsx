@@ -11,6 +11,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated'
 import type { Card, Grade } from '../types/card'
+import { getImageUrl } from '../lib/storage'
 import { fonts } from '../theme/fonts'
 
 const DARK_GRADE_COLORS = {
@@ -150,6 +151,9 @@ type Props = {
 
 function CardContent({ card }: Props) {
   const gradeColor = DARK_GRADE_COLORS[card.grade]
+  const imageUri = card.image_url
+    ? (card.image_url.startsWith('http') ? card.image_url : getImageUrl(card.image_url))
+    : null
 
   return (
     <LinearGradient
@@ -159,15 +163,15 @@ function CardContent({ card }: Props) {
       {isHighGrade(card.grade) && <ShineOverlay grade={card.grade} />}
 
       <View style={darkStyles.header}>
-        <Text style={darkStyles.petName}>{card.petName}</Text>
+        <Text style={darkStyles.petName}>{card.pet_name}</Text>
         <View style={[darkStyles.gradeBadge, { backgroundColor: gradeColor.primary }]}>
           <Text style={darkStyles.gradeText}>{card.grade}</Text>
         </View>
       </View>
 
       <View style={[darkStyles.imageContainer, { borderColor: `${gradeColor.primary}66` }]}>
-        {card.imageUrl ? (
-          <Image source={{ uri: card.imageUrl }} style={darkStyles.petImage} />
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={darkStyles.petImage} />
         ) : (
           <View style={darkStyles.imagePlaceholder}>
             <Ionicons name="paw" size={48} color={gradeColor.primary} />
@@ -183,7 +187,7 @@ function CardContent({ card }: Props) {
 
       <View style={darkStyles.infoRow}>
         <Text style={darkStyles.title}>{card.title}</Text>
-        <Text style={darkStyles.nameGuess}>{card.nameGuess}</Text>
+        <Text style={darkStyles.nameGuess}>{card.name_guess}</Text>
       </View>
 
       <View style={darkStyles.statsContainer}>
@@ -196,7 +200,7 @@ function CardContent({ card }: Props) {
 
       <View style={darkStyles.moveContainer}>
         <Ionicons name="sparkles" size={14} color={gradeColor.primary} />
-        <Text style={darkStyles.moveText}>{card.specialMove}</Text>
+        <Text style={darkStyles.moveText}>{card.special_move}</Text>
       </View>
     </LinearGradient>
   )

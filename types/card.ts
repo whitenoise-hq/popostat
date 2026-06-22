@@ -12,28 +12,16 @@ export type DetectedType = '강아지' | '고양이' | '기타동물' | '없음'
 
 export type Card = {
   id: string
-  userId: string
-  createdAt: string
-  petName: string
-  imageUrl: string
+  user_id: string
+  created_at: string
+  pet_name: string
+  image_url: string
   detected: DetectedType
-  nameGuess: string | null
+  name_guess: string | null
   power: number
   grade: Grade
   title: string | null
   analysis: string | null
-  specialMove: string | null
+  special_move: string | null
   stats: Stats
-}
-
-export type AnalyzeResponse = {
-  detected: DetectedType
-  nameGuess: string
-  power: number
-  grade: Grade
-  title: string
-  stats: Stats
-  analysis: string
-  specialMove: string
-  error: string | null
 }

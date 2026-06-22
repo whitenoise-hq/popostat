@@ -55,7 +55,7 @@ export default function RootLayout() {
     <View style={styles.root} onLayout={onLayoutRootView}>
       <QueryClientProvider client={queryClient}>
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
           <Stack.Screen name="(auth)/login" />
           <Stack.Screen name="(auth)/nickname" />
           <Stack.Screen name="scan" options={{ animation: 'fade' }} />

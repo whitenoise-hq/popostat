@@ -10,17 +10,17 @@ import type { Card } from '../../types/card'
 // TODO: 실제 데이터는 id로 조회. 지금은 목데이터
 const MOCK_CARD: Card = {
   id: 'mock-1',
-  userId: 'user-1',
-  createdAt: '2026-06-22T00:00:00Z',
-  petName: '뽀삐',
-  imageUrl: '',
+  user_id: 'user-1',
+  created_at: '2026-06-22T00:00:00Z',
+  pet_name: '뽀삐',
+  image_url: '',
   detected: '강아지',
-  nameGuess: '포메라니안',
+  name_guess: '포메라니안',
   power: 6842,
   grade: 'A',
   title: '솜뭉치 폭격기',
   analysis: '작지만 강력한 에너지를 품고 있다. 솜털 속에 숨겨진 전투력이 상당하다.',
-  specialMove: '솜사탕 돌진 — 폭신한 털로 적을 감싸 무력화',
+  special_move: '솜사탕 돌진 — 폭신한 털로 적을 감싸 무력화',
   stats: {
     attack: 72,
     defense: 45,
@@ -60,7 +60,7 @@ export default function CardDetailScreen() {
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>측정일</Text>
             <Text style={styles.metaValue}>
-              {new Date(MOCK_CARD.createdAt).toLocaleDateString('ko-KR')}
+              {new Date(MOCK_CARD.created_at).toLocaleDateString('ko-KR')}
             </Text>
           </View>
           <View style={styles.metaDivider} />
@@ -71,7 +71,7 @@ export default function CardDetailScreen() {
           <View style={styles.metaDivider} />
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>품종</Text>
-            <Text style={styles.metaValue}>{MOCK_CARD.nameGuess}</Text>
+            <Text style={styles.metaValue}>{MOCK_CARD.name_guess}</Text>
           </View>
         </View>
       </ScrollView>
