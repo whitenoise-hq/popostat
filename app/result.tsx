@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useQueryClient } from '@tanstack/react-query'
 import { BattleCardDark } from '../components/BattleCardDark'
 import { getMeasureState, clearMeasureState } from '../lib/measure-store'
 import { colors } from '../theme/colors'
@@ -9,6 +10,7 @@ import { fonts } from '../theme/fonts'
 
 export default function ResultScreen() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { result, error } = getMeasureState()
 
   // 에러 또는 데이터 없음
@@ -35,6 +37,7 @@ export default function ResultScreen() {
 
   function handleGoToDeck() {
     clearMeasureState()
+    queryClient.invalidateQueries({ queryKey: ['cards'] })
     router.replace('/(tabs)/deck')
   }
 

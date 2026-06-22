@@ -1,59 +1,42 @@
-import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native'
+import { useState, useMemo } from 'react'
+import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { LinearGradient } from 'expo-linear-gradient'
-import { colors } from '../../theme/colors'
+import { useCards } from '../../hooks/useCards'
+import { getImageUrl } from '../../lib/storage'
+import { colors, gradeColors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
-import { gradeColors } from '../../theme/colors'
 import type { Card, Grade } from '../../types/card'
+import { Image } from 'react-native'
 
-const MOCK_CARDS: Card[] = [
-  {
-    id: '1', user_id: 'u1', created_at: '2026-06-22T00:00:00Z',
-    pet_name: '뽀삐', image_url: '', detected: '강아지', name_guess: '포메라니안',
-    power: 6842, grade: 'A', title: '솜뭉치 폭격기', analysis: '', special_move: '솜사탕 돌진',
-    stats: { attack: 72, defense: 45, agility: 68, cuteness: 92, laziness: 35 },
-  },
-  {
-    id: '2', user_id: 'u1', created_at: '2026-06-21T00:00:00Z',
-    pet_name: '루나', image_url: '', detected: '고양이', name_guess: '러시안 블루',
-    power: 9200, grade: 'SS', title: '달빛의 암살자', analysis: '', special_move: '그림자 습격',
-    stats: { attack: 88, defense: 75, agility: 95, cuteness: 82, laziness: 15 },
-  },
-  {
-    id: '3', user_id: 'u1', created_at: '2026-06-20T00:00:00Z',
-    pet_name: '콩이', image_url: '', detected: '강아지', name_guess: '시츄',
-    power: 3200, grade: 'D', title: '낮잠의 왕', analysis: '', special_move: '무한 졸음',
-    stats: { attack: 25, defense: 40, agility: 20, cuteness: 78, laziness: 85 },
-  },
-  {
-    id: '4', user_id: 'u1', created_at: '2026-06-19T00:00:00Z',
-    pet_name: '제우스', image_url: '', detected: '강아지', name_guess: '시베리안 허스키',
-    power: 9800, grade: 'SSS', title: '폭풍의 지배자', analysis: '', special_move: '번개 울부짖음',
-    stats: { attack: 96, defense: 88, agility: 92, cuteness: 85, laziness: 8 },
-  },
-  {
-    id: '5', user_id: 'u1', created_at: '2026-06-18T00:00:00Z',
-    pet_name: '모찌', image_url: '', detected: '고양이', name_guess: '스코티시 폴드',
-    power: 5100, grade: 'F', title: '동글동글 수비수', analysis: '', special_move: '떡뭉치 방어',
-    stats: { attack: 35, defense: 72, agility: 40, cuteness: 95, laziness: 60 },
-  },
-  {
-    id: '6', user_id: 'u1', created_at: '2026-06-17T00:00:00Z',
-    pet_name: '번개', image_url: '', detected: '강아지', name_guess: '보더콜리',
-    power: 8100, grade: 'S', title: '질풍의 목양견', analysis: '', special_move: '섬광 질주',
-    stats: { attack: 70, defense: 65, agility: 98, cuteness: 60, laziness: 10 },
-  },
-]
+type SortOption = 'latest' | 'power' | 'grade'
+type FilterGrade = Grade | 'all'
+
+const SORT_LABELS: Record<SortOption, string> = {
+  latest: '최신순',
+  power: '전투력순',
+  grade: '등급순',
+}
+
+const GRADE_ORDER: Record<Grade, number> = {
+  F: 0, D: 1, C: 2, B: 3, A: 4, S: 5, SS: 6, SSS: 7,
+}
 
 function MiniCard({ card, onPress }: { card: Card; onPress: () => void }) {
   const grade = gradeColors[card.grade]
+  const imageUri = card.image_url
+    ? (card.image_url.startsWith('http') ? card.image_url : getImageUrl(card.image_url))
+    : null
 
   return (
     <Pressable style={styles.miniCard} onPress={onPress}>
       <View style={[styles.miniImageArea, { borderColor: `${grade.primary}44` }]}>
-        <Ionicons name="paw" size={28} color={grade.primary} />
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.miniImage} />
+        ) : (
+          <Ionicons name="paw" size={28} color={grade.primary} />
+        )}
       </View>
       <View style={styles.miniInfo}>
         <View style={styles.miniTopRow}>
@@ -76,11 +59,39 @@ function MiniCard({ card, onPress }: { card: Card; onPress: () => void }) {
 
 export default function DeckScreen() {
   const router = useRouter()
-  const hasCards = MOCK_CARDS.length > 0
+  const { data: cards, isLoading } = useCards()
+  const [sort, setSort] = useState<SortOption>('latest')
+  const [filterGrade, setFilterGrade] = useState<FilterGrade>('all')
+  const [showSort, setShowSort] = useState(false)
+  const [showFilter, setShowFilter] = useState(false)
 
-  if (!hasCards) {
+  const sortedCards = useMemo(() => {
+    if (!cards) return []
+
+    let filtered = filterGrade === 'all'
+      ? cards
+      : cards.filter((c) => c.grade === filterGrade)
+
+    return [...filtered].sort((a, b) => {
+      if (sort === 'power') return b.power - a.power
+      if (sort === 'grade') return GRADE_ORDER[b.grade] - GRADE_ORDER[a.grade]
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+  }, [cards, sort, filterGrade])
+
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  if (!cards || cards.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>덱</Text>
         </View>
@@ -103,23 +114,71 @@ export default function DeckScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>덱</Text>
         <View style={styles.headerActions}>
-          <Pressable style={styles.sortButton}>
-            <Ionicons name="swap-vertical" size={18} color={colors.text.secondary} />
+          <Pressable
+            style={[styles.chipButton, showSort && styles.chipButtonActive]}
+            onPress={() => { setShowSort(!showSort); setShowFilter(false) }}
+          >
+            <Ionicons name="swap-vertical" size={14} color={showSort ? colors.accent : colors.text.secondary} />
+            <Text style={[styles.chipText, showSort && styles.chipTextActive]}>
+              {SORT_LABELS[sort]}
+            </Text>
           </Pressable>
-          <Pressable style={styles.sortButton}>
-            <Ionicons name="filter" size={18} color={colors.text.secondary} />
+          <Pressable
+            style={[styles.chipButton, showFilter && styles.chipButtonActive]}
+            onPress={() => { setShowFilter(!showFilter); setShowSort(false) }}
+          >
+            <Ionicons name="filter" size={14} color={showFilter ? colors.accent : colors.text.secondary} />
+            <Text style={[styles.chipText, showFilter && styles.chipTextActive]}>
+              {filterGrade === 'all' ? '전체' : filterGrade}
+            </Text>
           </Pressable>
         </View>
       </View>
 
-      <Text style={styles.cardCount}>{MOCK_CARDS.length}장의 카드</Text>
+      {showSort && (
+        <View style={styles.optionRow}>
+          {(['latest', 'power', 'grade'] as SortOption[]).map((s) => (
+            <Pressable
+              key={s}
+              style={[styles.optionChip, sort === s && styles.optionChipActive]}
+              onPress={() => { setSort(s); setShowSort(false) }}
+            >
+              <Text style={[styles.optionChipText, sort === s && styles.optionChipTextActive]}>
+                {SORT_LABELS[s]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      {showFilter && (
+        <View style={styles.optionRow}>
+          <Pressable
+            style={[styles.optionChip, filterGrade === 'all' && styles.optionChipActive]}
+            onPress={() => { setFilterGrade('all'); setShowFilter(false) }}
+          >
+            <Text style={[styles.optionChipText, filterGrade === 'all' && styles.optionChipTextActive]}>전체</Text>
+          </Pressable>
+          {(['SSS', 'SS', 'S', 'A', 'B', 'C', 'D', 'F'] as Grade[]).map((g) => (
+            <Pressable
+              key={g}
+              style={[styles.optionChip, filterGrade === g && styles.optionChipActive]}
+              onPress={() => { setFilterGrade(g); setShowFilter(false) }}
+            >
+              <Text style={[styles.optionChipText, filterGrade === g && styles.optionChipTextActive]}>{g}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      <Text style={styles.cardCount}>{sortedCards.length}장의 카드</Text>
 
       <FlatList
-        data={MOCK_CARDS}
+        data={sortedCards}
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerStyle={styles.grid}
@@ -141,6 +200,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -158,15 +222,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  sortButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
+  chipButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    gap: 4,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  chipButtonActive: {
+    borderColor: colors.accent,
+  },
+  chipText: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.text.secondary,
+  },
+  chipTextActive: {
+    color: colors.accent,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  optionChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  optionChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  optionChipText: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.text.secondary,
+  },
+  optionChipTextActive: {
+    color: colors.button.primaryText,
   },
   cardCount: {
     fontSize: 12,
@@ -186,6 +289,7 @@ const styles = StyleSheet.create({
   },
   miniCard: {
     flex: 1,
+    maxWidth: '48%',
     backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
@@ -199,6 +303,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  miniImage: {
+    width: '100%',
+    height: '100%',
   },
   miniInfo: {
     padding: 10,

@@ -14,7 +14,7 @@ export function calcPower(s: Stats): number {
     s.cuteness * 0.10 -
     s.laziness * 0.20
   const norm = Math.max(0, Math.min(1, (raw + 20) / 110))
-  const curved = Math.pow(norm, 1.6)
+  const curved = Math.pow(norm, 1.3)
   return Math.round(curved * 10000)
 }
 

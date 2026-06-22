@@ -44,7 +44,7 @@ export default function MeasureScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.flex}>
         <View style={styles.header}>
           <Text style={styles.title}>전투력 측정</Text>
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 24,
   },
   measureButton: {
     flexDirection: 'row',
