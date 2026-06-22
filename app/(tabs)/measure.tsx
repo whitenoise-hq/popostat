@@ -1,10 +1,13 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
 
 export default function MeasureScreen() {
+  const router = useRouter()
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -41,9 +44,10 @@ export default function MeasureScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.measureButtonDisabled}>
-          <Ionicons name="flash" size={20} color={colors.button.disabledText} />
-          <Text style={styles.measureButtonDisabledText}>전투력 측정</Text>
+        {/* TODO: 사진+이름 입력 시 활성 버튼으로 전환 */}
+        <Pressable style={styles.measureButton} onPress={() => router.push('/scan')}>
+          <Ionicons name="flash" size={20} color={colors.button.primaryText} />
+          <Text style={styles.measureButtonText}>전투력 측정</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -147,18 +151,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
-  measureButtonDisabled: {
+  measureButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.button.disabled,
+    backgroundColor: colors.button.primary,
     borderRadius: 16,
     paddingVertical: 16,
     gap: 8,
   },
-  measureButtonDisabledText: {
+  measureButtonText: {
     fontSize: 16,
     fontFamily: fonts.bold,
-    color: colors.button.disabledText,
+    color: colors.button.primaryText,
   },
 })

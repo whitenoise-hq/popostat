@@ -33,6 +33,9 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(auth)/login" />
+          <Stack.Screen name="(auth)/nickname" />
+          <Stack.Screen name="scan" options={{ animation: 'fade' }} />
+          <Stack.Screen name="result" options={{ animation: 'slide_from_bottom' }} />
         </Stack>
       </QueryClientProvider>
     </View>

@@ -1,7 +1,16 @@
+import { useEffect } from 'react'
 import { View, Text, Image, StyleSheet } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
-import type { Card } from '../types/card'
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+} from 'react-native-reanimated'
+import type { Card, Grade } from '../types/card'
 import { fonts } from '../theme/fonts'
 
 const DARK_GRADE_COLORS = {
@@ -14,6 +23,101 @@ const DARK_GRADE_COLORS = {
   SS:  { primary: '#F472B6', glow: '#F472B666', gradient: ['#3A1F30', '#1E1F35'] as const },
   SSS: { primary: '#F59E0B', glow: '#F59E0B88', gradient: ['#3A2A10', '#1E1F35'] as const },
 } as const
+
+const RAINBOW_COLORS = ['#EF4444', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899', '#EF4444'] as const
+
+function isHighGrade(grade: Grade): boolean {
+  return grade === 'S' || grade === 'SS' || grade === 'SSS'
+}
+
+// 샤인 스윕 효과 (S 이상)
+function ShineOverlay({ grade }: { grade: Grade }) {
+  const translateX = useSharedValue(-300)
+
+  useEffect(() => {
+    const duration = grade === 'SSS' ? 2000 : grade === 'SS' ? 2500 : 3000
+    translateX.value = withRepeat(
+      withSequence(
+        withTiming(500, { duration, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-300, { duration: 0 }),
+      ),
+      -1,
+    )
+  }, [translateX, grade])
+
+  const shineStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { rotate: '25deg' }],
+  }))
+
+  const shineColor = grade === 'SSS' ? '#FFFFFF' : grade === 'SS' ? '#F9A8D4' : '#FDE047'
+
+  return (
+    <Animated.View style={[styles.shineOverlay, shineStyle]}>
+      <LinearGradient
+        colors={['transparent', `${shineColor}18`, `${shineColor}30`, `${shineColor}18`, 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.shineGradient}
+      />
+    </Animated.View>
+  )
+}
+
+// 글로우 펄스 테두리 (SS 이상)
+function GlowBorder({ grade, children }: { grade: Grade; children: React.ReactNode }) {
+  const glowOpacity = useSharedValue(0.4)
+
+  useEffect(() => {
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.3, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+    )
+  }, [glowOpacity])
+
+  const glowStyle = useAnimatedStyle(() => ({
+    shadowOpacity: glowOpacity.value,
+  }))
+
+  const gradeColor = DARK_GRADE_COLORS[grade]
+  const shadowColor = grade === 'SSS' ? '#F59E0B' : gradeColor.primary
+
+  return (
+    <Animated.View style={[styles.glowWrapper, glowStyle, { shadowColor }]}>
+      {children}
+    </Animated.View>
+  )
+}
+
+// 무지개 테두리 (SSS)
+function RainbowBorder({ children }: { children: React.ReactNode }) {
+  const colorIndex = useSharedValue(0)
+
+  useEffect(() => {
+    colorIndex.value = withRepeat(
+      withTiming(6, { duration: 3000, easing: Easing.linear }),
+      -1,
+    )
+  }, [colorIndex])
+
+  // 무지개 테두리는 LinearGradient border로 구현
+  return (
+    <View style={styles.rainbowOuter}>
+      <LinearGradient
+        colors={[...RAINBOW_COLORS]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.rainbowBorder}
+      >
+        <View style={styles.rainbowInner}>
+          {children}
+        </View>
+      </LinearGradient>
+    </View>
+  )
+}
 
 type StatBarProps = {
   label: string
@@ -44,59 +148,132 @@ type Props = {
   card: Card
 }
 
-export function BattleCardDark({ card }: Props) {
+function CardContent({ card }: Props) {
   const gradeColor = DARK_GRADE_COLORS[card.grade]
 
   return (
+    <LinearGradient
+      colors={gradeColor.gradient}
+      style={darkStyles.card}
+    >
+      {isHighGrade(card.grade) && <ShineOverlay grade={card.grade} />}
+
+      <View style={darkStyles.header}>
+        <Text style={darkStyles.petName}>{card.petName}</Text>
+        <View style={[darkStyles.gradeBadge, { backgroundColor: gradeColor.primary }]}>
+          <Text style={darkStyles.gradeText}>{card.grade}</Text>
+        </View>
+      </View>
+
+      <View style={[darkStyles.imageContainer, { borderColor: `${gradeColor.primary}66` }]}>
+        {card.imageUrl ? (
+          <Image source={{ uri: card.imageUrl }} style={darkStyles.petImage} />
+        ) : (
+          <View style={darkStyles.imagePlaceholder}>
+            <Ionicons name="paw" size={48} color={gradeColor.primary} />
+          </View>
+        )}
+        <View style={darkStyles.powerBadge}>
+          <Ionicons name="flash" size={12} color={gradeColor.primary} />
+          <Text style={[darkStyles.powerText, { color: gradeColor.primary }]}>
+            {card.power.toLocaleString()}
+          </Text>
+        </View>
+      </View>
+
+      <View style={darkStyles.infoRow}>
+        <Text style={darkStyles.title}>{card.title}</Text>
+        <Text style={darkStyles.nameGuess}>{card.nameGuess}</Text>
+      </View>
+
+      <View style={darkStyles.statsContainer}>
+        <StatBar label="공격" value={card.stats.attack} color="#EF4444" icon="flame" />
+        <StatBar label="방어" value={card.stats.defense} color="#3B82F6" icon="shield" />
+        <StatBar label="민첩" value={card.stats.agility} color="#22C55E" icon="speedometer" />
+        <StatBar label="귀여움" value={card.stats.cuteness} color="#EC4899" icon="heart" />
+        <StatBar label="게으름" value={card.stats.laziness} color="#8B5CF6" icon="moon" />
+      </View>
+
+      <View style={darkStyles.moveContainer}>
+        <Ionicons name="sparkles" size={14} color={gradeColor.primary} />
+        <Text style={darkStyles.moveText}>{card.specialMove}</Text>
+      </View>
+    </LinearGradient>
+  )
+}
+
+export function BattleCardDark({ card }: Props) {
+  const gradeColor = DARK_GRADE_COLORS[card.grade]
+
+  // SSS: 무지개 테두리 + 글로우
+  if (card.grade === 'SSS') {
+    return (
+      <GlowBorder grade={card.grade}>
+        <RainbowBorder>
+          <CardContent card={card} />
+        </RainbowBorder>
+      </GlowBorder>
+    )
+  }
+
+  // SS: 글로우 펄스
+  if (card.grade === 'SS') {
+    return (
+      <GlowBorder grade={card.grade}>
+        <View style={[darkStyles.cardOuter, { shadowColor: gradeColor.glow }]}>
+          <CardContent card={card} />
+        </View>
+      </GlowBorder>
+    )
+  }
+
+  // S: 일반 shadow + 샤인만
+  if (card.grade === 'S') {
+    return (
+      <View style={[darkStyles.cardOuter, { shadowColor: gradeColor.glow, shadowOpacity: 0.6 }]}>
+        <CardContent card={card} />
+      </View>
+    )
+  }
+
+  // F~A: 일반
+  return (
     <View style={[darkStyles.cardOuter, { shadowColor: gradeColor.glow }]}>
-      <LinearGradient
-        colors={gradeColor.gradient}
-        style={darkStyles.card}
-      >
-        <View style={darkStyles.header}>
-          <Text style={darkStyles.petName}>{card.petName}</Text>
-          <View style={[darkStyles.gradeBadge, { backgroundColor: gradeColor.primary }]}>
-            <Text style={darkStyles.gradeText}>{card.grade}</Text>
-          </View>
-        </View>
-
-        <View style={[darkStyles.imageContainer, { borderColor: `${gradeColor.primary}66` }]}>
-          {card.imageUrl ? (
-            <Image source={{ uri: card.imageUrl }} style={darkStyles.petImage} />
-          ) : (
-            <View style={darkStyles.imagePlaceholder}>
-              <Ionicons name="paw" size={48} color={gradeColor.primary} />
-            </View>
-          )}
-          <View style={darkStyles.powerBadge}>
-            <Ionicons name="flash" size={12} color={gradeColor.primary} />
-            <Text style={[darkStyles.powerText, { color: gradeColor.primary }]}>
-              {card.power.toLocaleString()}
-            </Text>
-          </View>
-        </View>
-
-        <View style={darkStyles.infoRow}>
-          <Text style={darkStyles.title}>{card.title}</Text>
-          <Text style={darkStyles.nameGuess}>{card.nameGuess}</Text>
-        </View>
-
-        <View style={darkStyles.statsContainer}>
-          <StatBar label="공격" value={card.stats.attack} color="#EF4444" icon="flame" />
-          <StatBar label="방어" value={card.stats.defense} color="#3B82F6" icon="shield" />
-          <StatBar label="민첩" value={card.stats.agility} color="#22C55E" icon="speedometer" />
-          <StatBar label="귀여움" value={card.stats.cuteness} color="#EC4899" icon="heart" />
-          <StatBar label="게으름" value={card.stats.laziness} color="#8B5CF6" icon="moon" />
-        </View>
-
-        <View style={darkStyles.moveContainer}>
-          <Ionicons name="sparkles" size={14} color={gradeColor.primary} />
-          <Text style={darkStyles.moveText}>{card.specialMove}</Text>
-        </View>
-      </LinearGradient>
+      <CardContent card={card} />
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  shineOverlay: {
+    position: 'absolute',
+    top: -50,
+    bottom: -50,
+    width: 200,
+    zIndex: 10,
+  },
+  shineGradient: {
+    flex: 1,
+  },
+  glowWrapper: {
+    borderRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 20,
+    elevation: 16,
+  },
+  rainbowOuter: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  rainbowBorder: {
+    padding: 2,
+    borderRadius: 22,
+  },
+  rainbowInner: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+})
 
 const darkStyles = StyleSheet.create({
   cardOuter: {
@@ -111,6 +288,7 @@ const darkStyles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#2A2B4A',
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -134,12 +312,14 @@ const darkStyles = StyleSheet.create({
     color: '#0F0F1A',
   },
   imageContainer: {
+    width: '100%',
     aspectRatio: 1.2,
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#12132A',
     borderWidth: 1,
     marginBottom: 12,
+    alignSelf: 'center',
   },
   petImage: {
     width: '100%',

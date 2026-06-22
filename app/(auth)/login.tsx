@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
 
@@ -8,6 +9,8 @@ const KAKAO_YELLOW = '#FEE500'
 const KAKAO_BROWN = '#3C1E1E'
 
 export default function LoginScreen() {
+  const router = useRouter()
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -15,13 +18,13 @@ export default function LoginScreen() {
           <View style={styles.logoIcon}>
             <Ionicons name="flash" size={40} color={colors.accent} />
           </View>
-          <Text style={styles.appName}>PopoStat</Text>
+          <Text style={styles.appName}>포포스탯</Text>
           <Text style={styles.tagline}>반려동물 전투력 측정기</Text>
         </View>
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.kakaoButton}>
+        <Pressable style={styles.kakaoButton} onPress={() => router.push('/(auth)/nickname')}>
           <Ionicons name="chatbubble" size={20} color={KAKAO_BROWN} />
           <Text style={styles.kakaoButtonText}>카카오로 시작하기</Text>
         </Pressable>
@@ -59,7 +62,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   appName: {
-    fontSize: 36,
+    fontSize: 26,
     fontFamily: fonts.bold,
     color: colors.text.primary,
     letterSpacing: -1,
