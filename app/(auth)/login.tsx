@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native'
+import { useState } from 'react'
+import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useRouter } from 'expo-router'
+import { signInWithKakao } from '../../lib/auth'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
 
@@ -9,7 +10,20 @@ const KAKAO_YELLOW = '#FEE500'
 const KAKAO_BROWN = '#3C1E1E'
 
 export default function LoginScreen() {
-  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
+  async function handleKakaoLogin() {
+    try {
+      setIsLoading(true)
+      await signInWithKakao()
+      // 로그인 성공 시 useProtectedRoute가 자동으로 탭으로 리다이렉트
+    } catch (error) {
+      console.error('Login failed:', error)
+      Alert.alert('로그인 실패', '다시 시도해주세요.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -24,9 +38,19 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.kakaoButton} onPress={() => router.push('/(auth)/nickname')}>
-          <Ionicons name="chatbubble" size={20} color={KAKAO_BROWN} />
-          <Text style={styles.kakaoButtonText}>카카오로 시작하기</Text>
+        <Pressable
+          style={[styles.kakaoButton, isLoading && styles.kakaoButtonDisabled]}
+          onPress={handleKakaoLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color={KAKAO_BROWN} />
+          ) : (
+            <Ionicons name="chatbubble" size={20} color={KAKAO_BROWN} />
+          )}
+          <Text style={styles.kakaoButtonText}>
+            {isLoading ? '로그인 중...' : '카카오로 시작하기'}
+          </Text>
         </Pressable>
         <Text style={styles.terms}>
           시작하면 이용약관 및 개인정보 처리방침에 동의합니다
@@ -85,6 +109,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     gap: 8,
+  },
+  kakaoButtonDisabled: {
+    opacity: 0.7,
   },
   kakaoButtonText: {
     fontSize: 16,

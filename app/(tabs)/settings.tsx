@@ -1,6 +1,9 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useSession } from '../../hooks/useSession'
+import { signOut, deleteAccount } from '../../lib/auth'
+import { queryClient } from '../../lib/query-client'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
 
@@ -9,14 +12,15 @@ type MenuItemProps = {
   label: string
   subtitle?: string
   danger?: boolean
+  onPress?: () => void
 }
 
-function MenuItem({ icon, label, subtitle, danger }: MenuItemProps) {
+function MenuItem({ icon, label, subtitle, danger, onPress }: MenuItemProps) {
   const iconColor = danger ? colors.error : colors.text.secondary
   const labelColor = danger ? colors.error : colors.text.primary
 
   return (
-    <Pressable style={styles.menuItem}>
+    <Pressable style={styles.menuItem} onPress={onPress}>
       <Ionicons name={icon} size={20} color={iconColor} />
       <View style={styles.menuItemContent}>
         <Text style={[styles.menuItemLabel, { color: labelColor }]}>{label}</Text>
@@ -30,6 +34,52 @@ function MenuItem({ icon, label, subtitle, danger }: MenuItemProps) {
 }
 
 export default function SettingsScreen() {
+  const { session } = useSession()
+  const userEmail = session?.user?.email
+  const provider = session?.user?.app_metadata?.provider
+
+  function handleLogout() {
+    Alert.alert('로그아웃', '정말 로그아웃 하시겠어요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        onPress: async () => {
+          try {
+            queryClient.clear()
+            await signOut()
+          } catch (error) {
+            console.error('Logout failed:', error)
+            Alert.alert('오류', '로그아웃에 실패했습니다.')
+          }
+        },
+      },
+    ])
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      '계정 삭제',
+      '모든 데이터가 영구 삭제됩니다. 정말 삭제하시겠어요?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              queryClient.clear()
+              await deleteAccount()
+              await signOut()
+            } catch (error) {
+              console.error('Delete account failed:', error)
+              Alert.alert('오류', '계정 삭제에 실패했습니다.')
+            }
+          },
+        },
+      ],
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -46,17 +96,21 @@ export default function SettingsScreen() {
             <Ionicons name="person" size={28} color={colors.text.muted} />
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>로그인이 필요합니다</Text>
-            <Text style={styles.profileSub}>카카오 계정으로 시작하기</Text>
+            <Text style={styles.profileName}>
+              {userEmail ?? '로그인이 필요합니다'}
+            </Text>
+            <Text style={styles.profileSub}>
+              {provider ? `${provider} 연동` : '카카오 계정으로 시작하기'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>계정</Text>
           <View style={styles.sectionCard}>
-            <MenuItem icon="log-out-outline" label="로그아웃" />
+            <MenuItem icon="log-out-outline" label="로그아웃" onPress={handleLogout} />
             <View style={styles.menuDivider} />
-            <MenuItem icon="trash-outline" label="계정 삭제" danger />
+            <MenuItem icon="trash-outline" label="계정 삭제" danger onPress={handleDeleteAccount} />
           </View>
         </View>
 
