@@ -14,6 +14,8 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import { measurePet } from '../lib/measure'
+import { getMeasureState, setMeasureResult, setMeasureError } from '../lib/measure-store'
 import { colors } from '../theme/colors'
 import { fonts } from '../theme/fonts'
 
@@ -80,13 +82,24 @@ export default function ScanScreen() {
     return () => clearTimeout(timer)
   }, [apiDone])
 
-  // API 응답 도착 시 (현재는 목데이터로 시뮬레이션)
+  // 실제 API 호출
   useEffect(() => {
-    // TODO: 실제 API 호출로 교체. 지금은 3.5초 후 응답 시뮬레이션
-    const timer = setTimeout(() => {
+    const { imageUri, petName } = getMeasureState()
+    if (!imageUri || !petName) {
+      setMeasureError('사진과 이름이 필요합니다')
       setApiDone(true)
-    }, 3500)
-    return () => clearTimeout(timer)
+      return
+    }
+
+    measurePet(imageUri, petName)
+      .then((card) => {
+        setMeasureResult(card)
+        setApiDone(true)
+      })
+      .catch((err) => {
+        setMeasureError(err instanceof Error ? err.message : '측정에 실패했습니다')
+        setApiDone(true)
+      })
   }, [])
 
   // apiDone이 되었고 최소 시간도 지났으면 완료 애니메이션

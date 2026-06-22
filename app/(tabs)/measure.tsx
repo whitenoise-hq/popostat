@@ -1,55 +1,121 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native'
+import { useState } from 'react'
+import { View, Text, StyleSheet, Pressable, Image, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
+import { setMeasureInput } from '../../lib/measure-store'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
 
 export default function MeasureScreen() {
   const router = useRouter()
+  const [imageUri, setImageUri] = useState<string | null>(null)
+  const [petName, setPetName] = useState('')
+
+  const isReady = imageUri !== null && petName.trim().length >= 1
+
+  async function pickImage(source: 'camera' | 'library') {
+    const options: ImagePicker.ImagePickerOptions = {
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [1, 1],
+    }
+
+    const result = source === 'camera'
+      ? await ImagePicker.launchCameraAsync(options)
+      : await ImagePicker.launchImageLibraryAsync(options)
+
+    if (!result.canceled && result.assets[0]) {
+      setImageUri(result.assets[0].uri)
+    }
+  }
+
+  function handleMeasure() {
+    if (!isReady || !imageUri) return
+    setMeasureInput(imageUri, petName.trim())
+    router.push('/scan')
+  }
+
+  function handleReset() {
+    setImageUri(null)
+    setPetName('')
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>전투력 측정</Text>
-        <Text style={styles.subtitle}>우리 아이의 전투력은?</Text>
-      </View>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>전투력 측정</Text>
+          <Text style={styles.subtitle}>우리 아이의 전투력은?</Text>
+        </View>
 
-      <View style={styles.content}>
-        <Pressable style={styles.photoArea}>
-          <View style={styles.photoPlaceholder}>
-            <Ionicons name="paw" size={48} color={colors.text.muted} />
-            <Text style={styles.photoHint}>사진을 선택해주세요</Text>
-          </View>
-          <View style={styles.photoButtons}>
-            <Pressable style={styles.photoButton}>
-              <Ionicons name="camera" size={20} color={colors.accent} />
-              <Text style={styles.photoButtonText}>카메라</Text>
-            </Pressable>
-            <View style={styles.photoDivider} />
-            <Pressable style={styles.photoButton}>
-              <Ionicons name="images" size={20} color={colors.accent} />
-              <Text style={styles.photoButtonText}>앨범</Text>
-            </Pressable>
-          </View>
-        </Pressable>
+        <View style={styles.content}>
+          {imageUri ? (
+            <View style={styles.photoPreview}>
+              <Image source={{ uri: imageUri }} style={styles.previewImage} />
+              <Pressable style={styles.resetButton} onPress={handleReset}>
+                <Ionicons name="close-circle" size={28} color={colors.text.primary} />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.photoArea}>
+              <View style={styles.photoPlaceholder}>
+                <Ionicons name="paw" size={48} color={colors.text.muted} />
+                <Text style={styles.photoHint}>사진을 선택해주세요</Text>
+              </View>
+              <View style={styles.photoButtons}>
+                <Pressable style={styles.photoButton} onPress={() => pickImage('camera')}>
+                  <Ionicons name="camera" size={20} color={colors.accent} />
+                  <Text style={styles.photoButtonText}>카메라</Text>
+                </Pressable>
+                <View style={styles.photoDivider} />
+                <Pressable style={styles.photoButton} onPress={() => pickImage('library')}>
+                  <Ionicons name="images" size={20} color={colors.accent} />
+                  <Text style={styles.photoButtonText}>앨범</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>이름</Text>
-          <View style={styles.inputWrapper}>
-            <Ionicons name="pencil" size={16} color={colors.text.muted} />
-            <Text style={styles.inputPlaceholder}>이름을 입력하세요</Text>
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>이름</Text>
+            <View style={[styles.inputWrapper, petName.length > 0 && styles.inputWrapperFocus]}>
+              <Ionicons name="pencil" size={16} color={petName.length > 0 ? colors.accent : colors.text.muted} />
+              <TextInput
+                style={styles.input}
+                value={petName}
+                onChangeText={setPetName}
+                placeholder="이름을 입력하세요"
+                placeholderTextColor={colors.input.placeholder}
+                maxLength={20}
+                returnKeyType="done"
+              />
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.footer}>
-        {/* TODO: 사진+이름 입력 시 활성 버튼으로 전환 */}
-        <Pressable style={styles.measureButton} onPress={() => router.push('/scan')}>
-          <Ionicons name="flash" size={20} color={colors.button.primaryText} />
-          <Text style={styles.measureButtonText}>전투력 측정</Text>
-        </Pressable>
-      </View>
+        <View style={styles.footer}>
+          <Pressable
+            style={[styles.measureButton, !isReady && styles.measureButtonDisabled]}
+            onPress={handleMeasure}
+            disabled={!isReady}
+          >
+            <Ionicons
+              name="flash"
+              size={20}
+              color={isReady ? colors.button.primaryText : colors.button.disabledText}
+            />
+            <Text style={[styles.measureButtonText, !isReady && styles.measureButtonTextDisabled]}>
+              전투력 측정
+            </Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -58,6 +124,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  flex: {
+    flex: 1,
   },
   header: {
     paddingHorizontal: 20,
@@ -122,6 +191,23 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: colors.border,
   },
+  photoPreview: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: colors.card,
+  },
+  previewImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 20,
+  },
+  resetButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#00000066',
+    borderRadius: 14,
+  },
   inputContainer: {
     gap: 8,
   },
@@ -142,10 +228,15 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 10,
   },
-  inputPlaceholder: {
+  inputWrapperFocus: {
+    borderColor: colors.input.borderFocus,
+  },
+  input: {
+    flex: 1,
     fontSize: 15,
     fontFamily: fonts.regular,
-    color: colors.input.placeholder,
+    color: colors.text.primary,
+    padding: 0,
   },
   footer: {
     paddingHorizontal: 20,
@@ -160,9 +251,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 8,
   },
+  measureButtonDisabled: {
+    backgroundColor: colors.button.disabled,
+  },
   measureButtonText: {
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.button.primaryText,
+  },
+  measureButtonTextDisabled: {
+    color: colors.button.disabledText,
   },
 })
