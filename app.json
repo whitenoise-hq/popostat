@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PopoStat",
+    "name": "포포스탯",
     "slug": "popostat",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -23,7 +23,8 @@
       "expo-web-browser",
       "expo-splash-screen",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

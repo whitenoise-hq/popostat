@@ -2,35 +2,52 @@ import type { Grade } from '../types/card'
 
 type GradeColor = {
   readonly primary: string
-  readonly bg: string
+  readonly glow: string
 }
 
 export const gradeColors: Record<Grade, GradeColor> = {
-  F:   { primary: '#9E9E9E', bg: '#F5F5F5' },
-  D:   { primary: '#26A69A', bg: '#E0F2F1' },
-  C:   { primary: '#42A5F5', bg: '#E3F2FD' },
-  B:   { primary: '#AB47BC', bg: '#F3E5F5' },
-  A:   { primary: '#FF7043', bg: '#FBE9E7' },
-  S:   { primary: '#FFD54F', bg: '#FFF8E1' },
-  SS:  { primary: '#F48FB1', bg: '#FCE4EC' },
-  SSS: { primary: '#FF6F00', bg: '#FFF3E0' },
+  F:   { primary: '#6B7280', glow: '#6B728044' },
+  D:   { primary: '#2DD4BF', glow: '#2DD4BF44' },
+  C:   { primary: '#60A5FA', glow: '#60A5FA44' },
+  B:   { primary: '#C084FC', glow: '#C084FC44' },
+  A:   { primary: '#FB923C', glow: '#FB923C44' },
+  S:   { primary: '#FBBF24', glow: '#FBBF2466' },
+  SS:  { primary: '#F472B6', glow: '#F472B666' },
+  SSS: { primary: '#F59E0B', glow: '#F59E0B88' },
 } as const
 
 export const colors = {
-  background: '#FFFFFF',
-  surface: '#F8F9FA',
+  background: '#0F0F1A',
+  surface: '#1A1B2E',
+  card: '#1E1F35',
+  border: '#2A2B4A',
   text: {
-    primary: '#1A1A1A',
-    secondary: '#6B7280',
-    disabled: '#9CA3AF',
-    inverse: '#FFFFFF',
+    primary: '#E8E8F0',
+    secondary: '#8B8BA8',
+    muted: '#6B6B8D',
+    inverse: '#0F0F1A',
   },
-  border: '#E5E7EB',
+  accent: '#7C5CFC',
   error: '#EF4444',
-  success: '#10B981',
+  success: '#22C55E',
   tabBar: {
-    active: '#1A1A1A',
-    inactive: '#9CA3AF',
-    background: '#FFFFFF',
+    active: '#E8E8F0',
+    inactive: '#6B6B8D',
+    background: '#12132A',
+    border: '#1E1F35',
+  },
+  input: {
+    background: '#12132A',
+    border: '#2A2B4A',
+    borderFocus: '#7C5CFC',
+    placeholder: '#4A4A6A',
+  },
+  button: {
+    primary: '#7C5CFC',
+    primaryText: '#FFFFFF',
+    secondary: '#1A1B2E',
+    secondaryText: '#E8E8F0',
+    disabled: '#2A2B4A',
+    disabledText: '#4A4A6A',
   },
 } as const
