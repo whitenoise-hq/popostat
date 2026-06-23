@@ -4,5 +4,3 @@ export const fonts = {
   semiBold: 'Pretendard-SemiBold',
   bold: 'Pretendard-Bold',
 } as const
-
-export type FontWeight = keyof typeof fonts

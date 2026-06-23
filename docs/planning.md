@@ -76,12 +76,12 @@ function calcPower(s) {
     s.cuteness * 0.10 -
     s.laziness * 0.20;
   const norm = Math.max(0, Math.min(1, (raw + 20) / 110));
-  const curved = Math.pow(norm, 1.6); // 지수↑ = 고등급 희귀
+  const curved = Math.pow(norm, 1.3); // 지수↑ = 고등급 희귀
   return Math.round(curved * 10000);  // 0~10000
 }
 ```
 
-> 곡선 지수(1.6)는 실제 사진으로 튜닝. ↑ 희귀, ↓ 후함.
+> 곡선 지수(1.3)는 실제 사진으로 밸런싱한 값. ↑ 희귀, ↓ 후함. 단일 출처: `supabase/functions/_shared/score.ts`.
 
 ### 4.4 grade 결정 (코드, power 구간)
 

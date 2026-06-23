@@ -29,7 +29,6 @@ export const colors = {
   },
   accent: '#7C5CFC',
   error: '#EF4444',
-  success: '#22C55E',
   tabBar: {
     active: '#E8E8F0',
     inactive: '#6B6B8D',
