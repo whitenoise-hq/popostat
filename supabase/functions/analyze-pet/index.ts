@@ -46,21 +46,17 @@ Deno.serve(async (req) => {
     if (!authHeader) return json({ error: "인증이 필요합니다" }, 401)
 
     // 유저 확인 (REST API)
-    console.log("[analyze-pet] verifying user...")
     const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { Authorization: authHeader, apikey: Deno.env.get("SUPABASE_ANON_KEY")! },
     })
     if (!userRes.ok) return json({ error: "유효하지 않은 사용자" }, 401)
     const user = await userRes.json()
-    console.log("[analyze-pet] user:", user.id)
 
     // 요청 파싱
     const { image_url, pet_name } = await req.json()
     if (!image_url || !pet_name) return json({ error: "image_url과 pet_name이 필요합니다" }, 400)
-    console.log("[analyze-pet] image:", image_url, "name:", pet_name)
 
     // Signed URL (REST API with service role)
-    console.log("[analyze-pet] creating signed URL...")
     const signRes = await fetch(
       `${SUPABASE_URL}/storage/v1/object/sign/card-images/${image_url}`,
       {
@@ -74,13 +70,11 @@ Deno.serve(async (req) => {
       }
     )
     const signData = await signRes.json()
-    console.log("[analyze-pet] sign result:", JSON.stringify(signData))
 
     if (!signData.signedURL) return json({ error: "이미지 URL 생성 실패" }, 500)
     const imageAccessUrl = `${SUPABASE_URL}/storage/v1${signData.signedURL}`
 
     // OpenAI 호출
-    console.log("[analyze-pet] calling OpenAI...")
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -105,7 +99,6 @@ Deno.serve(async (req) => {
       }),
     })
 
-    console.log("[analyze-pet] OpenAI status:", openaiRes.status)
     if (!openaiRes.ok) {
       const errText = await openaiRes.text()
       console.error("[analyze-pet] OpenAI error:", errText)
@@ -117,7 +110,6 @@ Deno.serve(async (req) => {
     if (!content) return json({ error: "AI 응답이 비어있습니다" }, 502)
 
     const parsed = JSON.parse(content)
-    console.log("[analyze-pet] detected:", parsed.detected)
 
     if (parsed.detected === "없음") {
       return json({ error: parsed.error || "동물을 찾을 수 없습니다", detected: "없음" })
@@ -125,7 +117,6 @@ Deno.serve(async (req) => {
 
     const power = calcPower(parsed.stats)
     const grade = calcGrade(power)
-    console.log("[analyze-pet] power:", power, "grade:", grade)
 
     // DB insert (REST API with service role, user_id를 직접 지정)
     const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/cards`, {
@@ -159,7 +150,6 @@ Deno.serve(async (req) => {
 
     const cards = await insertRes.json()
     const card = Array.isArray(cards) ? cards[0] : cards
-    console.log("[analyze-pet] saved card:", card.id)
 
     return json(card)
   } catch (err) {

@@ -54,16 +54,12 @@ export async function measurePet(imageUri: string, petName: string): Promise<Car
   const imagePath = await uploadImage(imageUri, user.id)
 
   // 2. Edge Function 호출
-  console.log('[measure] calling edge function with:', { image_url: imagePath, pet_name: petName })
   const { data, error } = await supabase.functions.invoke('analyze-pet', {
     body: {
       image_url: imagePath,
       pet_name: petName,
     },
   })
-
-  console.log('[measure] response data:', JSON.stringify(data))
-  console.log('[measure] response error:', JSON.stringify(error))
 
   if (error) {
     // non-2xx 시 응답 body를 직접 읽어봄
@@ -75,7 +71,6 @@ export async function measurePet(imageUri: string, petName: string): Promise<Car
         detail = body?.error ?? detail
       }
     } catch { /* ignore */ }
-    console.log('[measure] error detail:', detail)
     throw new Error(`측정 실패: ${detail}`)
   }
 
