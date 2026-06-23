@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { View, Text, StyleSheet, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { BattleCardDark } from '../../components/BattleCardDark'
+import { ShareableCard } from '../../components/ShareableCard'
 import { AppModal } from '../../components/ui/AppModal'
 import { useCard, useDeleteCard } from '../../hooks/useCards'
+import { shareCardImage } from '../../lib/share'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
 
@@ -15,6 +16,20 @@ export default function CardDetailScreen() {
   const { data: card, isLoading } = useCard(id ?? '')
   const deleteCard = useDeleteCard()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
+  const cardRef = useRef<View>(null)
+
+  async function handleShare() {
+    if (isSharing) return
+    setIsSharing(true)
+    try {
+      await shareCardImage(cardRef)
+    } catch (error) {
+      Alert.alert('공유 실패', error instanceof Error ? error.message : '카드 공유에 실패했습니다')
+    } finally {
+      setIsSharing(false)
+    }
+  }
 
   async function handleConfirmDelete() {
     if (!card) return
@@ -45,8 +60,12 @@ export default function CardDetailScreen() {
         </Pressable>
         <Text style={styles.headerTitle}>카드 상세</Text>
         <View style={styles.headerRight}>
-          <Pressable style={styles.headerIconButton} onPress={() => {}}>
-            <Ionicons name="share-outline" size={20} color={colors.text.primary} />
+          <Pressable style={styles.headerIconButton} onPress={handleShare} disabled={isSharing}>
+            {isSharing ? (
+              <ActivityIndicator size="small" color={colors.text.primary} />
+            ) : (
+              <Ionicons name="share-outline" size={20} color={colors.text.primary} />
+            )}
           </Pressable>
           <Pressable style={styles.headerIconButton} onPress={() => setShowDeleteModal(true)}>
             <Ionicons name="trash-outline" size={20} color={colors.error} />
@@ -59,7 +78,7 @@ export default function CardDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <BattleCardDark card={card} />
+        <ShareableCard ref={cardRef} card={card} />
 
         {card.analysis ? (
           <View style={styles.analysisCard}>

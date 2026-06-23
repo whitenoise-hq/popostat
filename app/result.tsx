@@ -1,10 +1,12 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native'
+import { useRef, useState } from 'react'
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { BattleCardDark } from '../components/BattleCardDark'
+import { ShareableCard } from '../components/ShareableCard'
 import { getMeasureState, clearMeasureState } from '../lib/measure-store'
+import { shareCardImage } from '../lib/share'
 import { colors } from '../theme/colors'
 import { fonts } from '../theme/fonts'
 
@@ -12,6 +14,8 @@ export default function ResultScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { result, error } = getMeasureState()
+  const [isSharing, setIsSharing] = useState(false)
+  const cardRef = useRef<View>(null)
 
   // 에러 또는 데이터 없음
   if (error || !result) {
@@ -46,6 +50,18 @@ export default function ResultScreen() {
     router.replace('/(tabs)/measure')
   }
 
+  async function handleShare() {
+    if (isSharing) return
+    setIsSharing(true)
+    try {
+      await shareCardImage(cardRef)
+    } catch (err) {
+      Alert.alert('공유 실패', err instanceof Error ? err.message : '카드 공유에 실패했습니다')
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -53,7 +69,7 @@ export default function ResultScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <BattleCardDark card={result} />
+        <ShareableCard ref={cardRef} card={result} />
 
         {result.analysis ? (
           <View style={styles.analysisCard}>
@@ -67,9 +83,15 @@ export default function ResultScreen() {
             <Ionicons name="albums" size={18} color={colors.button.primaryText} />
             <Text style={styles.primaryButtonText}>덱에서 확인</Text>
           </Pressable>
-          <Pressable style={styles.secondaryButton}>
-            <Ionicons name="share-outline" size={18} color={colors.text.primary} />
-            <Text style={styles.secondaryButtonText}>공유하기</Text>
+          <Pressable style={styles.secondaryButton} onPress={handleShare} disabled={isSharing}>
+            {isSharing ? (
+              <ActivityIndicator size="small" color={colors.text.primary} />
+            ) : (
+              <>
+                <Ionicons name="share-outline" size={18} color={colors.text.primary} />
+                <Text style={styles.secondaryButtonText}>공유하기</Text>
+              </>
+            )}
           </Pressable>
         </View>
         <Pressable style={styles.retryButton} onPress={handleRetry}>
