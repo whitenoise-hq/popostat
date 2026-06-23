@@ -18,12 +18,17 @@ function useProtectedRoute(session: ReturnType<typeof useSession>['session'], is
     if (isLoading) return
 
     const inAuthGroup = segments[0] === '(auth)'
+    const onNicknameScreen = segments[0] === '(auth)' && segments[1] === 'nickname'
+    const hasNickname = !!session?.user?.user_metadata?.nickname
 
     if (!session && !inAuthGroup) {
       // 미로그인 + 인증 화면 아님 → 로그인으로
       router.replace('/(auth)/login')
-    } else if (session && inAuthGroup) {
-      // 로그인됨 + 인증 화면에 있음 → 탭으로
+    } else if (session && !hasNickname && !onNicknameScreen) {
+      // 로그인됨 + 닉네임 미설정 → 닉네임 화면으로
+      router.replace('/(auth)/nickname')
+    } else if (session && hasNickname && inAuthGroup) {
+      // 로그인됨 + 닉네임 있음 + 인증 화면에 있음 → 탭으로
       router.replace('/(tabs)/measure')
     }
   }, [session, isLoading, segments, router])
@@ -61,6 +66,7 @@ export default function RootLayout() {
           <Stack.Screen name="scan" options={{ animation: 'fade' }} />
           <Stack.Screen name="result" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="card/[id]" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="account" options={{ animation: 'slide_from_right' }} />
         </Stack>
       </QueryClientProvider>
     </View>

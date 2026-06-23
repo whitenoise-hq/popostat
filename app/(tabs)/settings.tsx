@@ -1,84 +1,21 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native'
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import * as WebBrowser from 'expo-web-browser'
 import { useSession } from '../../hooks/useSession'
-import { signOut, deleteAccount } from '../../lib/auth'
-import { queryClient } from '../../lib/query-client'
+import { MenuItem } from '../../components/ui/MenuItem'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
 
-type MenuItemProps = {
-  icon: keyof typeof Ionicons.glyphMap
-  label: string
-  subtitle?: string
-  danger?: boolean
-  onPress?: () => void
-}
-
-function MenuItem({ icon, label, subtitle, danger, onPress }: MenuItemProps) {
-  const iconColor = danger ? colors.error : colors.text.secondary
-  const labelColor = danger ? colors.error : colors.text.primary
-
-  return (
-    <Pressable style={styles.menuItem} onPress={onPress}>
-      <Ionicons name={icon} size={20} color={iconColor} />
-      <View style={styles.menuItemContent}>
-        <Text style={[styles.menuItemLabel, { color: labelColor }]}>{label}</Text>
-        {subtitle ? (
-          <Text style={styles.menuItemSubtitle}>{subtitle}</Text>
-        ) : null}
-      </View>
-      <Ionicons name="chevron-forward" size={16} color={colors.text.muted} />
-    </Pressable>
-  )
-}
+const TERMS_URL = 'https://spring-fang-155.notion.site/38822734852d80eead6be30bda1523a5'
+const PRIVACY_URL = 'https://spring-fang-155.notion.site/38822734852d80a1b657e16eda065e0b'
 
 export default function SettingsScreen() {
+  const router = useRouter()
   const { session } = useSession()
+  const nickname = session?.user?.user_metadata?.nickname as string | undefined
   const userEmail = session?.user?.email
-  const provider = session?.user?.app_metadata?.provider
-
-  function handleLogout() {
-    Alert.alert('로그아웃', '정말 로그아웃 하시겠어요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '로그아웃',
-        onPress: async () => {
-          try {
-            queryClient.clear()
-            await signOut()
-          } catch (error) {
-            console.error('Logout failed:', error)
-            Alert.alert('오류', '로그아웃에 실패했습니다.')
-          }
-        },
-      },
-    ])
-  }
-
-  function handleDeleteAccount() {
-    Alert.alert(
-      '계정 삭제',
-      '모든 데이터가 영구 삭제됩니다. 정말 삭제하시겠어요?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              queryClient.clear()
-              await deleteAccount()
-              await signOut()
-            } catch (error) {
-              console.error('Delete account failed:', error)
-              Alert.alert('오류', '계정 삭제에 실패했습니다.')
-            }
-          },
-        },
-      ],
-    )
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -91,37 +28,45 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={28} color={colors.text.muted} />
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>
-              {userEmail ?? '로그인이 필요합니다'}
-            </Text>
-            <Text style={styles.profileSub}>
-              {provider ? `${provider} 연동` : '카카오 계정으로 시작하기'}
-            </Text>
-          </View>
-        </View>
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>계정</Text>
-          <View style={styles.sectionCard}>
-            <MenuItem icon="log-out-outline" label="로그아웃" onPress={handleLogout} />
-            <View style={styles.menuDivider} />
-            <MenuItem icon="trash-outline" label="계정 삭제" danger onPress={handleDeleteAccount} />
-          </View>
+          <Pressable style={styles.profileCard} onPress={() => router.push('/account')}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={28} color={colors.text.muted} />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>
+                {nickname ?? '닉네임 미설정'}
+              </Text>
+              <Text style={styles.profileSub}>
+                {userEmail ?? '로그인이 필요합니다'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />
+          </Pressable>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>정보</Text>
           <View style={styles.sectionCard}>
-            <MenuItem icon="document-text-outline" label="이용약관" />
+            <MenuItem
+              icon="document-text-outline"
+              label="이용약관"
+              onPress={() => WebBrowser.openBrowserAsync(TERMS_URL)}
+            />
             <View style={styles.menuDivider} />
-            <MenuItem icon="shield-checkmark-outline" label="개인정보 처리방침" />
+            <MenuItem
+              icon="shield-checkmark-outline"
+              label="개인정보 처리방침"
+              onPress={() => WebBrowser.openBrowserAsync(PRIVACY_URL)}
+            />
             <View style={styles.menuDivider} />
-            <MenuItem icon="information-circle-outline" label="앱 정보" subtitle="v1.0.0" />
+            <MenuItem
+              icon="information-circle-outline"
+              label="앱 정보"
+              value="v1.0.0"
+              showChevron={false}
+            />
           </View>
         </View>
       </ScrollView>
@@ -203,26 +148,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  menuItemContent: {
-    flex: 1,
-  },
-  menuItemLabel: {
-    fontSize: 15,
-    fontFamily: fonts.medium,
-  },
-  menuItemSubtitle: {
-    fontSize: 12,
-    fontFamily: fonts.regular,
-    color: colors.text.muted,
-    marginTop: 1,
   },
   menuDivider: {
     height: 1,

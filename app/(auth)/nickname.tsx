@@ -1,15 +1,31 @@
 import { useState } from 'react'
-import { View, Text, TextInput, StyleSheet, Pressable, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TextInput, StyleSheet, Pressable, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { updateNickname, isValidNickname, NICKNAME_MAX_LENGTH } from '../../lib/auth'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
 
-const MAX_NICKNAME_LENGTH = 10
-
 export default function NicknameScreen() {
+  const router = useRouter()
   const [nickname, setNickname] = useState('')
-  const isValid = nickname.trim().length >= 2
+  const [isSaving, setIsSaving] = useState(false)
+  const isValid = isValidNickname(nickname)
+
+  async function handleSubmit() {
+    if (!isValid || isSaving) return
+    try {
+      setIsSaving(true)
+      await updateNickname(nickname)
+      router.replace('/(tabs)/measure')
+    } catch (error) {
+      console.error('Nickname save failed:', error)
+      Alert.alert('오류', '닉네임 저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -23,7 +39,7 @@ export default function NicknameScreen() {
               <Ionicons name="person" size={32} color={colors.accent} />
             </View>
             <Text style={styles.title}>닉네임을 정해주세요</Text>
-            <Text style={styles.subtitle}>다른 트레이너에게 보여질 이름이에요</Text>
+            <Text style={styles.subtitle}>한글·영어 2~6자로 입력해주세요</Text>
           </View>
 
           <View style={styles.inputArea}>
@@ -32,14 +48,15 @@ export default function NicknameScreen() {
                 style={styles.input}
                 value={nickname}
                 onChangeText={setNickname}
-                placeholder="2~10자 닉네임"
+                placeholder="한글·영어 2~6자"
                 placeholderTextColor={colors.input.placeholder}
-                maxLength={MAX_NICKNAME_LENGTH}
+                maxLength={NICKNAME_MAX_LENGTH}
                 autoFocus
                 returnKeyType="done"
+                onSubmitEditing={handleSubmit}
               />
               <Text style={styles.charCount}>
-                {nickname.length}/{MAX_NICKNAME_LENGTH}
+                {nickname.length}/{NICKNAME_MAX_LENGTH}
               </Text>
             </View>
           </View>
@@ -48,16 +65,23 @@ export default function NicknameScreen() {
         <View style={styles.footer}>
           <Pressable
             style={[styles.button, isValid ? styles.buttonActive : styles.buttonDisabled]}
-            disabled={!isValid}
+            disabled={!isValid || isSaving}
+            onPress={handleSubmit}
           >
-            <Text style={[styles.buttonText, isValid ? styles.buttonTextActive : styles.buttonTextDisabled]}>
-              시작하기
-            </Text>
-            <Ionicons
-              name="arrow-forward"
-              size={18}
-              color={isValid ? colors.button.primaryText : colors.button.disabledText}
-            />
+            {isSaving ? (
+              <ActivityIndicator size="small" color={colors.button.primaryText} />
+            ) : (
+              <>
+                <Text style={[styles.buttonText, isValid ? styles.buttonTextActive : styles.buttonTextDisabled]}>
+                  시작하기
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={isValid ? colors.button.primaryText : colors.button.disabledText}
+                />
+              </>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>

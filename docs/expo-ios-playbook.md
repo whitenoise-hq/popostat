@@ -242,4 +242,34 @@ npx supabase secrets set KEY=value
 - [ ] 개인정보처리방침 URL
 - [ ] 다크모드/키보드/폰트 함정 확인(9번)
 - [ ] 멀티유저면 realtime cross-group 누수 2계정 테스트
+
+---
+
+## 12. Sign in with Apple 설정
+
+App Store 가이드라인 4.8: 소셜 로그인(카카오)을 제공하면 Apple 로그인도 동등하게 제공해야 리젝을 피한다.
+구현은 **네이티브 플로우**: `expo-apple-authentication`의 `signInAsync` → `identityToken`을 `supabase.auth.signInWithIdToken({ provider: 'apple', token })`로 교환. (카카오의 OAuth 웹 플로우와 다름)
+
+### 코드/설정 (완료)
+- `expo-apple-authentication` 설치, `app.json` `plugins`에 추가 + `ios.usesAppleSignIn: true`.
+- `lib/auth.ts`의 `signInWithApple()`, `app/(auth)/login.tsx`의 Apple 버튼(`isAvailableAsync()`로 노출 게이팅).
+
+### 빌드 (필수)
+플러그인 추가 후 **네이티브 재생성·리빌드 전에는 버튼이 안 보인다**(`isAvailableAsync()`가 false). Expo Go에서는 동작 불가.
+```
+npx expo prebuild            # 플러그인 → 엔타이틀먼트(com.apple.developer.applesignin) + bundleId 반영
+npx pod-install              # 또는 prebuild가 자동
+npx expo run:ios             # 실기기/dev build (시뮬레이터는 iCloud 로그인 시 동작)
+```
+
+### Apple Developer (developer.apple.com)
+- App ID(`com.devwoodie.popostat`)에 **Sign In with Apple** capability 활성화.
+- 웹/안드로이드까지 확장할 때만: **Services ID** 생성 + Return URL `https://djvdxacfuaztndcvxqph.supabase.co/auth/v1/callback` 등록 + Sign in with Apple **키(.p8)** 발급(Key ID/Team ID 기록).
+
+### Supabase Dashboard (Authentication → Providers → Apple)
+- **Client IDs**에 iOS **Bundle ID** `com.devwoodie.popostat` 입력 — 네이티브 `identityToken`의 `aud` 검증용. 네이티브 전용이면 이것만으로 동작.
+- 웹 OAuth까지 쓸 때만 Secret Key 섹션에 Services ID/Team ID/Key ID/.p8 입력.
+
+### 참고: 카카오 iOS
+카카오는 OAuth 웹 플로우라 앱에 client id를 넣지 않는다. 카카오 Developers 콘솔에서 ① Redirect URI `https://djvdxacfuaztndcvxqph.supabase.co/auth/v1/callback` 등록, ② 플랫폼 → iOS에 Bundle ID `com.devwoodie.popostat` 등록. Supabase Kakao provider에는 REST API 키(Client ID)·시크릿 입력.
 - [ ] `npx tsc --noEmit` 통과
