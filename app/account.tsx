@@ -22,8 +22,9 @@ export default function AccountScreen() {
   const { session } = useSession()
   const nickname = session?.user?.user_metadata?.nickname as string | undefined
   const userEmail = session?.user?.email
+  const isGuest = session?.user?.is_anonymous === true
   const provider = session?.user?.app_metadata?.provider
-  const providerLabel = provider ? (PROVIDER_LABELS[provider] ?? provider) : null
+  const providerLabel = provider ? (PROVIDER_LABELS[provider] ?? null) : null
 
   const [showNicknameModal, setShowNicknameModal] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
@@ -73,7 +74,9 @@ export default function AccountScreen() {
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{nickname ?? '닉네임 미설정'}</Text>
-            <Text style={styles.profileSub}>{userEmail ?? '-'}</Text>
+            <Text style={styles.profileSub}>
+              {isGuest ? '게스트 모드 · 카드는 7일 후 삭제돼요' : (userEmail ?? '-')}
+            </Text>
           </View>
         </View>
 

@@ -16,6 +16,7 @@ export default function SettingsScreen() {
   const { session } = useSession()
   const nickname = session?.user?.user_metadata?.nickname as string | undefined
   const userEmail = session?.user?.email
+  const isGuest = session?.user?.is_anonymous === true
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -39,7 +40,7 @@ export default function SettingsScreen() {
                 {nickname ?? '닉네임 미설정'}
               </Text>
               <Text style={styles.profileSub}>
-                {userEmail ?? '로그인이 필요합니다'}
+                {isGuest ? '게스트 모드 · 7일 후 삭제' : (userEmail ?? '로그인이 필요합니다')}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />

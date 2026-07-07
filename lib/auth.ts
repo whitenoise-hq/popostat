@@ -47,6 +47,20 @@ export async function signInWithKakao() {
 }
 
 /**
+ * 게스트(익명) 로그인. 소셜 로그인 없이 앱을 바로 쓸 수 있게 한다(5.1.1(v) 대응).
+ * Supabase가 익명 UUID를 자동 생성하고, 표시용 닉네임(Guest####)을 함께 부여한다.
+ * 닉네임을 sign-in 시점에 metadata로 넣어 닉네임 입력 화면을 건너뛴다.
+ * 카드 저장/RLS는 소셜 계정과 동일하게 동작(user_id = 익명 uid).
+ */
+export async function signInAsGuest() {
+  const nickname = `Guest${Math.floor(1000 + Math.random() * 9000)}`
+  const { error } = await supabase.auth.signInAnonymously({
+    options: { data: { nickname } },
+  })
+  if (error) throw error
+}
+
+/**
  * Sign in with Apple (네이티브 플로우).
  * 카카오와 달리 OAuth 웹 리다이렉트가 아니라 네이티브 시트 → identityToken을
  * Supabase에 전달해 세션을 만든다. 실기기/dev build에서만 동작(Expo Go 불가).

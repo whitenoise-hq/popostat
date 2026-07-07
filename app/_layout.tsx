@@ -18,7 +18,7 @@ function useProtectedRoute(session: ReturnType<typeof useSession>['session'], is
     if (isLoading) return
 
     const inAuthGroup = segments[0] === '(auth)'
-    const onNicknameScreen = segments[0] === '(auth)' && segments[1] === 'nickname'
+    const onNicknameScreen = segments[0] === '(auth)' && (segments as string[])[1] === 'nickname'
     const hasNickname = !!session?.user?.user_metadata?.nickname
 
     if (!session && !inAuthGroup) {

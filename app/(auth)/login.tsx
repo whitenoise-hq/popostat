@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Alert, Platform } from 'react-native'
+import { View, Text, StyleSheet, Alert, Platform, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as AppleAuthentication from 'expo-apple-authentication'
-import { signInWithKakao, signInWithApple } from '../../lib/auth'
+import { signInWithKakao, signInWithApple, signInAsGuest } from '../../lib/auth'
 import { SocialButton } from '../../components/auth/SocialButton'
 import { colors } from '../../theme/colors'
 import { fonts } from '../../theme/fonts'
@@ -13,7 +13,7 @@ const KAKAO_BROWN = '#3C1E1E'
 const APPLE_BLACK = '#000000'
 const APPLE_WHITE = '#FFFFFF'
 
-type Loading = 'kakao' | 'apple' | null
+type Loading = 'kakao' | 'apple' | 'guest' | null
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState<Loading>(null)
@@ -46,6 +46,19 @@ export default function LoginScreen() {
       if ((error as { code?: string })?.code === 'ERR_REQUEST_CANCELED') return
       console.error('Apple login failed:', error)
       Alert.alert('로그인 실패', '다시 시도해주세요.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  async function handleGuestLogin() {
+    try {
+      setLoading('guest')
+      await signInAsGuest()
+      // 성공 시 useProtectedRoute가 자동으로 측정 탭으로 이동
+    } catch (error) {
+      console.error('Guest login failed:', error)
+      Alert.alert('오류', '다시 시도해주세요.')
     } finally {
       setLoading(null)
     }
@@ -84,6 +97,15 @@ export default function LoginScreen() {
             disabled={loading !== null}
           />
         ) : null}
+        <Pressable
+          style={styles.guestButton}
+          onPress={handleGuestLogin}
+          disabled={loading !== null}
+        >
+          <Text style={styles.guestButtonText}>
+            {loading === 'guest' ? '잠시만요...' : '게스트로 둘러보기'}
+          </Text>
+        </Pressable>
         <Text style={styles.terms}>
           시작하면 이용약관 및 개인정보 처리방침에 동의합니다
         </Text>
@@ -132,6 +154,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     gap: 12,
+  },
+  guestButton: {
+    alignSelf: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  guestButtonText: {
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+    color: colors.text.secondary,
+    textDecorationLine: 'underline',
   },
   terms: {
     fontSize: 11,
